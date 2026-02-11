@@ -1,0 +1,449 @@
+manifest:
+  version: "0.1.3"
+  schema: https://a2as.org/cert/schema
+  subject:
+    name: datawranglerai/talk-data-to-me
+    source: https://github.com/datawranglerai/talk-data-to-me
+    branch: main
+    commit: "29614e72"
+    scope: [commentator_agent/commentator.py, commentator_agent/supervisor.py, crisis_response_agent/agent.py, crisis_response_agent/sub_agents/crisis_response_team.py,
+      local_agent/agent.py, main.py, tools/broadcasting.py, tools/demo_tools.py, utils/audio_player.py, utils/gemma3n.py]
+  issued:
+    by: A2AS.org
+    at: '2026-02-11T16:50:48Z'
+    url: https://a2as.org/certified/agents/datawranglerai/talk-data-to-me
+  signatures:
+    digest: sha256:NO2gNqE2R0FQJZGIK5nPcdeJzW4-H5hYI7tuhzNX9Kk
+    key: ed25519:FWVN9FT7e5_oQuy8VohapRlkLaeLyhAALNp7TXuc-LU
+    sig: ed25519:gHUmfcLHcCYwpEYBXiHQuMw9qn-QJg1UGw7a5ALZCkwuBu_FPfrCjQGpN_2iubAFfilYMGWizGXF3PZKO75ZBg
+
+agents:
+  agent.LiveCommentator:
+    type: class
+    models: [gemini-2.5-flash]
+    params:
+      class: LiveCommentator
+      base: BaseAgent
+      name: name
+  alert_monitor:
+    type: instance
+    models: [gpt-4o]
+    tools: [emergency_alert_scan_adk_tool]
+    params:
+      name: AlertMonitor
+      instruction: [You are the AlertMonitor specialist for emergency crisis response., 'MANDATORY ACTIONS when activated:',
+        1. IMMEDIATELY execute emergency_alert_scan with provided crisis parameters, '2. ASSESS threat severity using standard
+          emergency classification (SEVERE, CRITICAL, EXTREME)', 3. IDENTIFY immediate threats to life and property, 4. SCAN
+          for secondary threats and cascading risks, 5. PROVIDE structured threat assessment report, 'REQUIRED OUTPUT FORMAT:',
+        '- Primary threat classification and severity level', '- Immediate dangers identified', '- Secondary/cascading risks
+          detected', '- Recommended response urgency level', '- Specific areas or populations at risk', 'COORDINATION PROTOCOL:',
+        '- Execute your tools immediately upon activation', '- Report findings in structured format', '- Return control to
+          CrisisCoordinator with actionable intelligence', '- Flag any escalating conditions that require immediate attention',
+        'PROFESSIONAL STANDARD: Follow FEMA Incident Command System protocols for threat assessment and reporting.']
+      planner: planner
+      before_tool_callback: broadcast_tool_event
+      after_tool_callback: broadcast_tool_complete
+      after_model_callback: broadcast_llm_reasoning
+  communications_hub:
+    type: instance
+    models: [gpt-4o]
+    tools: [communication_broadcast_adk_tool]
+    params:
+      name: CommunicationsHub
+      instruction: [You are the CommunicationsHub specialist for emergency public information and coordination., 'MANDATORY
+          ACTIONS when activated:', 1. IMMEDIATELY execute communication_broadcast with crisis-appropriate messaging, '2.
+          CRAFT clear, actionable public warning messages', 3. SELECT appropriate urgency levels and communication channels,
+        4. COORDINATE messaging with ongoing response operations, 5. MONITOR public information needs and response effectiveness,
+        'REQUIRED OUTPUT FORMAT:', '- Primary public warning message with clear action items', '- Communication channels utilized
+          and estimated reach', '- Messaging urgency level and follow-up schedule', '- Public information needs and potential
+          confusion areas', '- Coordination requirements with other agencies and media', 'COORDINATION PROTOCOL:', '- Execute
+          communication_broadcast tool immediately upon activation', '- Provide clear, actionable public messaging appropriate
+          to threat level', '- Ensure messaging aligns with evacuation and resource coordination plans', '- Monitor for public
+          information gaps requiring additional messaging', '- Return control to CrisisCoordinator with communication status
+          and public response', 'PROFESSIONAL STANDARD: Follow Emergency Alert System (EAS) protocols and CDC Crisis and Emergency
+          Risk Communication (CERC) principles for public warning and information dissemination.']
+      planner: planner
+      before_tool_callback: broadcast_tool_event
+      after_tool_callback: broadcast_tool_complete
+      after_model_callback: broadcast_llm_reasoning
+  crisis_supervisor:
+    type: instance
+    models: [openai/gpt-4o]
+    params:
+      name: CrisisCoordinator
+      planner: planner
+      instruction: [You are the Crisis Response Coordinator operating under emergency protocols. You must orchestrate a comprehensive
+          multi-phase response using specialized teams., 'For each crisis, you will:', 1. Plan your approach step by step,
+        2. Execute actions with specialist teams explaining why you chose to transfer to specific agents, 3. Reason through
+          their responses, 4. Re-engage with specific agents of your choosing to double-check the plan and adjust accordingly,
+        5. Communicate with sub-agents for any updates on the situation, 6. Provide a final comprehensive plan, '## CRISIS
+          RESPONSE PROTOCOL - REACT METHODOLOGY', '### PHASE 1: INITIAL ASSESSMENT & THREAT ANALYSIS', '**REASONING:** First,
+          establish the scope and severity of the crisis', '**ACTION:** Delegate to AlertMonitor for immediate threat assessment',
+        '**OBSERVATION:** Analyze threat data to determine response priorities', '### PHASE 2: RESOURCE EVALUATION & LOGISTICS',
+        '**REASONING:** Based on threat assessment, determine resource requirements', '**ACTION:** Delegate to ResourceCoordinator
+          for availability and deployment analysis', '**OBSERVATION:** Evaluate resource constraints and capabilities', '###
+          PHASE 3: EVACUATION STRATEGY DEVELOPMENT', '**REASONING:** With threat and resource data, develop evacuation parameters',
+        '**ACTION:** Delegate to EvacuationPlanner for route optimization and timing', '**OBSERVATION:** Assess evacuation
+          feasibility and potential bottlenecks', '### PHASE 4: COMMUNICATION STRATEGY ACTIVATION', '**REASONING:** Coordinate
+          public messaging based on all gathered intelligence', '**ACTION:** Delegate to CommunicationsHub for alert dissemination
+          strategy', '**OBSERVATION:** Evaluate communication reach and effectiveness', '### PHASE 5: INTEGRATION & REFINEMENT',
+        '**REASONING:** Synthesize all specialist reports and identify gaps or conflicts', '**ACTION:** Re-delegate to specific
+          teams for clarification or additional analysis', '**OBSERVATION:** Validate integrated response plan for completeness',
+        '### PHASE 6: FINAL COORDINATION PLAN', '**REASONING:** Compile comprehensive response with timelines and dependencies',
+        '**ACTION:** Generate final crisis response coordination plan', '**OBSERVATION:** Confirm all critical elements are
+          addressed', '## DELEGATION REQUIREMENTS:', '- **MUST delegate to ALL four specialist teams** in logical sequence',
+        '- **MUST analyze each response** before proceeding to next phase', '- **MUST identify information gaps** and re-delegate
+          for clarification', '- **MUST synthesize conflicting information** from multiple sources', '- **MUST create timeline-based
+          coordination** with clear dependencies', '## CRISIS RESPONSE OBJECTIVES:', '1. **Immediate Safety:** Protect lives
+          and minimize casualties', '2. **Resource Optimization:** Deploy assets efficiently and effectively', '3. **Traffic
+          Management:** Prevent evacuation gridlock and ensure clear routes', '4. **Public Communication:** Maintain calm
+          while providing clear direction', '5. **Inter-agency Coordination:** Ensure all responding agencies work in harmony',
+        '## REASONING FRAMEWORK:', 'For each decision, explicitly state:', '- WHY you''re delegating to this specific team',
+        '- WHAT information you need from them', '- HOW their response affects your overall strategy', '- WHEN their actions
+          fit into the broader timeline', '- WHERE potential conflicts or dependencies exist', '## FINAL DELIVERABLE:', 'A
+          comprehensive Crisis Response Coordination Plan including:', '- Threat assessment summary with severity ratings',
+        '- Resource deployment matrix with timelines', '- Evacuation sequence with route assignments', '- Communication plan
+          with public messaging schedule', '- Contingency protocols for complications', '- Inter-agency coordination framework',
+        'Remember: Lives depend on thorough analysis and precise coordination. Leave no critical element unaddressed.']
+      before_tool_callback: broadcast_tool_event
+      after_tool_callback: broadcast_tool_complete
+      after_model_callback: broadcast_llm_reasoning
+      sub_agents: [alert_monitor, resource_coordinator, evacuation_planner, communications_hub]
+  evacuation_planner:
+    type: instance
+    models: [gpt-4o]
+    tools: [evacuation_route_analysis_adk_tool]
+    params:
+      name: EvacuationPlanner
+      instruction: [You are the EvacuationPlanner specialist for emergency evacuation coordination., 'MANDATORY ACTIONS when
+          activated:', 1. IMMEDIATELY execute evacuation_route_analysis for the affected area, 2. ASSESS primary and alternative
+          evacuation routes, 3. CALCULATE evacuation timelines and traffic flow capacity, 4. IDENTIFY evacuation bottlenecks
+          and traffic management needs, 5. RECOMMEND phased evacuation strategy with specific timelines, 'REQUIRED OUTPUT
+          FORMAT:', '- Primary evacuation route with capacity and estimated travel time', '- Alternative routes with conditional
+          usage recommendations', '- Traffic management requirements and personnel needs', '- Evacuation timeline with phases
+          and population segments', '- Shelter destinations and capacity requirements', '- Special needs populations requiring
+          assisted evacuation', 'COORDINATION PROTOCOL:', '- Execute evacuation_route_analysis tool immediately upon activation',
+        '- Provide detailed evacuation plan with specific routes and timelines', '- Identify potential evacuation complications
+          and mitigation strategies', '- Coordinate with ResourceCoordinator for transportation asset needs', '- Return control
+          to CrisisCoordinator with comprehensive evacuation strategy', 'PROFESSIONAL STANDARD: Follow National Incident Management
+          System (NIMS) protocols for evacuation planning and traffic management.']
+      planner: planner
+      before_tool_callback: broadcast_tool_event
+      after_tool_callback: broadcast_tool_complete
+      after_model_callback: broadcast_llm_reasoning
+  resource_coordinator:
+    type: instance
+    models: [gpt-4o]
+    tools: [resource_availability_check_adk_tool]
+    params:
+      name: ResourceCoordinator
+      instruction: [You are the ResourceCoordinator specialist for emergency resource management., 'MANDATORY ACTIONS when
+          activated:', 1. IMMEDIATELY execute resource_availability_check for the crisis location, '2. ASSESS available emergency
+          resources (personnel, equipment, facilities)', 3. CALCULATE response capacity and deployment timelines, 4. IDENTIFY
+          resource gaps and constraints, 5. RECOMMEND resource allocation priorities, 'REQUIRED OUTPUT FORMAT:', '- Available
+          emergency personnel count and deployment time', '- Emergency equipment inventory and readiness status', '- Medical
+          facilities capacity and availability', '- Transportation resources for evacuation support', '- Resource gaps requiring
+          mutual aid or additional support', 'COORDINATION PROTOCOL:', '- Execute resource_availability_check tool immediately
+          upon activation', '- Provide detailed resource assessment with specific numbers and timelines', '- Identify critical
+          resource shortages that could impact response', '- Return control to CrisisCoordinator with actionable resource
+          intelligence', '- Recommend resource pre-positioning if time permits', 'PROFESSIONAL STANDARD: Follow Emergency
+          Management Assistance Compact (EMAC) protocols for resource coordination and mutual aid requests.']
+      planner: planner
+      before_tool_callback: broadcast_tool_event
+      after_tool_callback: broadcast_tool_complete
+      after_model_callback: broadcast_llm_reasoning
+  root:
+    type: instance
+    params:
+      name: Root
+      function: main
+      sub_agents: [supervisor, LiveCommentator]
+  root_agent:
+    type: instance
+    models: [gemma-3n-e2b-it-mlx]
+    tools: [fake_search]
+    params:
+      name: Local_Gemma3n_Search_Agent
+      instruction: [Use fake_search to look things up.]
+  Searcher:
+    type: instance
+    models: [gpt-4o]
+    tools: [fake_search]
+    params:
+      name: Searcher
+      instruction: [Use fake_search to look things up.]
+      before_tool_callback: broadcast_tool_event
+  Summariser:
+    type: instance
+    models: [gpt-4o]
+    tools: [fake_summarise]
+    params:
+      name: Summariser
+      instruction: [Use fake_summarise on the previous search result.]
+      before_tool_callback: broadcast_tool_event
+  supervisor:
+    type: instance
+    params:
+      name: Supervisor
+      sub_agents: [Searcher, Summariser]
+
+models:
+  gemini-2.5-flash:
+    type: default
+    agents: [agent.LiveCommentator]
+  gemma-3n-e2b-it-mlx:
+    type: literal
+    agents: [root_agent]
+    params:
+      alias: [openai/gemma-3n-e2b-it-mlx]
+  gpt-4o:
+    type: literal
+    agents: [alert_monitor, resource_coordinator, evacuation_planner, communications_hub, Searcher, Summariser]
+    params:
+      alias: [openai/gpt-4o]
+  openai/gpt-4o:
+    type: function
+    agents: [crisis_supervisor]
+    params:
+      wrapper: LiteLlm
+      model: openai/gpt-4o
+
+tools:
+  communication_broadcast_adk_tool:
+    type: function
+    agents: [communications_hub]
+  emergency_alert_scan_adk_tool:
+    type: function
+    agents: [alert_monitor]
+  evacuation_route_analysis_adk_tool:
+    type: function
+    agents: [evacuation_planner]
+  fake_search:
+    type: function
+    agents: [root_agent]
+    params:
+      description: |-
+        Pretend to search the web and return a stub result.
+
+        Args:
+            query: The search query string
+
+        Returns:
+            A dictionary containing the search results
+  fake_summarise:
+    type: function
+    params:
+      description: |-
+        Summarise text in one sentence.
+
+        Args:
+            text: The text to summarize
+
+        Returns:
+            A dictionary containing the summary
+  resource_availability_check_adk_tool:
+    type: function
+    agents: [resource_coordinator]
+
+teams:
+  crisis_supervisor:
+    type: hierarchy
+    agents: [crisis_supervisor, alert_monitor, resource_coordinator, evacuation_planner, communications_hub]
+  root:
+    type: parallel
+    agents: [root, supervisor, LiveCommentator]
+  supervisor:
+    type: sequential
+    agents: [supervisor, Searcher, Summariser]
+
+imports:
+  alert_monitor: sub_agents.crisis_response_team.alert_monitor
+  Any: typing.Any
+  AsyncGenerator: typing.AsyncGenerator
+  asyncio: asyncio
+  atexit: atexit
+  BaseAgent: google.adk.agents.BaseAgent
+  BaseTool: google.adk.tools.BaseTool
+  broadcast_llm_reasoning: tools.broadcasting.broadcast_llm_reasoning
+  broadcast_tool_complete: tools.broadcasting.broadcast_tool_complete
+  broadcast_tool_event: tools.broadcasting.broadcast_tool_event
+  BuiltInPlanner: google.adk.planners.BuiltInPlanner
+  CallbackAudioPlayer: utils.audio_player.CallbackAudioPlayer
+  CallbackContext: google.adk.agents.callback_context.CallbackContext
+  Client: google.genai.Client
+  commentator_queue: commentator_agent.commentator.commentator_queue
+  communication_broadcast: tools.crisis_tools.communication_broadcast
+  communications_hub: sub_agents.crisis_response_team.communications_hub
+  Content: google.genai.types.Content
+  datetime: datetime.datetime
+  deque: collections.deque
+  Deque: typing.Deque
+  Dict: typing.Dict
+  emergency_alert_scan: tools.crisis_tools.emergency_alert_scan
+  evacuation_planner: sub_agents.crisis_response_team.evacuation_planner
+  evacuation_route_analysis: tools.crisis_tools.evacuation_route_analysis
+  Event: google.adk.events.Event
+  fake_search: tools.demo_tools.fake_search
+  fake_summarise: tools.demo_tools.fake_summarise
+  FunctionTool: google.adk.tools.function_tool.FunctionTool
+  InMemorySessionService: google.adk.sessions.InMemorySessionService
+  InvocationContext: google.adk.agents.invocation_context.InvocationContext
+  json: json
+  LiteLlm: google.adk.models.lite_llm.LiteLlm
+  litellm: litellm
+  LiveCommentator: commentator_agent.commentator.LiveCommentator
+  LiveConnectConfig: google.genai.types.LiveConnectConfig
+  LlmAgent: google.adk.agents.LlmAgent
+  LlmResponse: google.adk.models.llm_response.LlmResponse
+  logger: loguru.logger
+  Modality: google.genai.types.Modality
+  Optional: typing.Optional
+  os: os
+  ParallelAgent: google.adk.agents.ParallelAgent
+  Part: google.genai.types.Part
+  PlanReActPlanner: google.adk.planners.PlanReActPlanner
+  PrivateAttr: pydantic.PrivateAttr
+  ProactivityConfig: google.genai.types.ProactivityConfig
+  pyaudio: pyaudio
+  Queue: asyncio.Queue
+  queue: queue
+  random: random
+  resource_availability_check: tools.crisis_tools.resource_availability_check
+  resource_coordinator: sub_agents.crisis_response_team.resource_coordinator
+  Runner: google.adk.runners.Runner
+  SequentialAgent: google.adk.agents.SequentialAgent
+  setup_local_model: utils.gemma3n.setup_local_model
+  supervisor: commentator_agent.supervisor.supervisor
+  ThinkingConfig: google.genai.types.ThinkingConfig
+  time: time
+  ToolContext: google.adk.tools.ToolContext
+  traceback: traceback
+
+functions:
+  __init__:
+    type: sync
+    module: utils.audio_player
+    args: [self]
+  _audio_callback:
+    type: sync
+    module: utils.audio_player
+    args: [self, in_data, frame_count, time_info, status]
+  _generate_commentary_prompt:
+    type: sync
+    module: commentator_agent.commentator
+    args: [self, narration]
+    params:
+      returns: str
+  _get_commentary_style:
+    type: sync
+    module: commentator_agent.commentator
+    args: [self]
+    params:
+      returns: str
+  _narrate:
+    type: async
+    module: commentator_agent.commentator
+    args: [self]
+    params:
+      returns: None
+  _play_audio_chunk:
+    type: sync
+    module: commentator_agent.commentator
+    args: [audio_bytes]
+  _run_async_impl:
+    type: async
+    module: commentator_agent.commentator
+    args: [self, ctx]
+    params:
+      returns: AsyncGenerator
+  _stream_gemini_live:
+    type: async
+    module: commentator_agent.commentator
+    args: [self, text]
+    params:
+      returns: None
+  add_chunk:
+    type: sync
+    module: utils.audio_player
+    args: [self, audio_bytes]
+  broadcast_llm_reasoning:
+    type: sync
+    module: tools.broadcasting
+    args: [callback_context, llm_response]
+    params:
+      returns: Optional[None]
+  broadcast_tool_complete:
+    type: sync
+    module: tools.broadcasting
+    args: [tool, args, tool_context, tool_response]
+    params:
+      returns: Optional[Dict]
+  broadcast_tool_event:
+    type: sync
+    module: tools.broadcasting
+    args: [tool, args, tool_context]
+    params:
+      returns: Optional[Dict]
+  communication_broadcast:
+    type: sync
+    module: crisis_response_agent.tools.crisis_tools
+    args: [message, urgency_level, tool_context]
+  emergency_alert_scan:
+    type: sync
+    module: crisis_response_agent.tools.crisis_tools
+    args: [location, alert_type, tool_context]
+  evacuation_route_analysis:
+    type: sync
+    module: crisis_response_agent.tools.crisis_tools
+    args: [start_location, destination, tool_context]
+  fake_search:
+    type: sync
+    module: tools.demo_tools
+    args: [query, tool_context]
+  fake_summarise:
+    type: sync
+    module: tools.demo_tools
+    args: [text, tool_context]
+  main:
+    type: async
+    module: main
+  resource_availability_check:
+    type: sync
+    module: crisis_response_agent.tools.crisis_tools
+    args: [resource_type, radius_miles, tool_context]
+  setup_local_model:
+    type: sync
+    module: utils.gemma3n
+    params:
+      returns: LiteLlm
+  start:
+    type: sync
+    module: utils.audio_player
+    args: [self]
+  stop:
+    type: sync
+    module: utils.audio_player
+    args: [self]
+
+variables:
+  GOOGLE_API_KEY:
+    type: env
+    params:
+      caller: [os.getenv, Client]
+      path: [commentator_agent.commentator]
+  USE_GEMMA_3N:
+    type: env
+    params:
+      caller: [os.getenv]
+      path: [crisis_response_agent.sub_agents.crisis_response_team]
+
+networks:
+  localhost:
+    type: api
+    actions: [GET]
+    urls: [/v1]
+    protocols: [http]
+    ports: ["1234"]
+    params:
+      caller: [setup_local_model]
+      links: [api_base]
